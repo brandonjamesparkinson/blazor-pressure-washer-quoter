@@ -1,0 +1,47 @@
+@page "/testimonials"
+
+<PageTitle>Testimonials - Pressure Perfect</PageTitle>
+
+<div class="testimonials-container">
+    <div class="header-section">
+        <h1>What Our Customers Say</h1>
+        <p class="subtitle">Real reviews from satisfied clients across the region.</p>
+    </div>
+
+    <div class="reviews-grid">
+        @foreach (var review in Reviews)
+        {
+            <div class="review-card">
+                <div class="stars">
+                    @for (int i = 0; i < review.Rating; i++)
+                    {
+                        <span class="star">★</span>
+                    }
+                </div>
+                <p class="review-text">"@review.Text"</p>
+                <div class="reviewer-info">
+                    <span class="name">@review.Name</span>
+                    <span class="service">@review.ServiceType</span>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    class Review
+    {
+        public string Name { get; set; } = "";
+        public string ServiceType { get; set; } = "";
+        public string Text { get; set; } = "";
+        public int Rating { get; set; } = 5;
+    }
+
+    private List<Review> Reviews = new()
+    {
+        new Review { Name = "Sarah Jenkins", ServiceType = "Driveway Cleaning", Text = "Absolutely amazed by the difference! My driveway looks brand new. The team was professional and efficient.", Rating = 5 },
+        new Review { Name = "Mike Thompson", ServiceType = "Roof Soft Wash", Text = "I was worried about my roof, but their soft wash technique worked wonders. No more moss!", Rating = 5 },
+        new Review { Name = "Emily Chen", ServiceType = "Patio & Decking", Text = "Great service and fair pricing. The online quote tool was spot on.", Rating = 4 },
+        new Review { Name = "David Wilson", ServiceType = "Siding Cleaning", Text = "Removed years of grime from our siding. Highly recommend Pressure Perfect.", Rating = 5 }
+    };
+}

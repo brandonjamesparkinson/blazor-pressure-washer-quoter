@@ -1,0 +1,91 @@
+@page "/contact"
+@using System.ComponentModel.DataAnnotations
+
+<PageTitle>Contact Us - Pressure Perfect</PageTitle>
+
+<div class="contact-container">
+    <div class="contact-header">
+        <h1>Get In Touch</h1>
+        <p>Have questions? We're here to help.</p>
+    </div>
+
+    <div class="contact-grid">
+        <!-- Contact Form -->
+        <div class="contact-form-card">
+            <h3>Send us a Message</h3>
+            <EditForm Model="@contactModel" OnValidSubmit="HandleSubmit">
+                <DataAnnotationsValidator />
+                
+                <div class="form-group">
+                    <label>Name</label>
+                    <InputText class="form-control" @bind-Value="contactModel.Name" placeholder="Your Name" />
+                    <ValidationMessage For="@(() => contactModel.Name)" />
+                </div>
+
+                <div class="form-group">
+                    <label>Email</label>
+                    <InputText class="form-control" @bind-Value="contactModel.Email" placeholder="email@example.com" />
+                    <ValidationMessage For="@(() => contactModel.Email)" />
+                </div>
+
+                <div class="form-group">
+                    <label>Message</label>
+                    <InputTextArea class="form-control" rows="5" @bind-Value="contactModel.Message" placeholder="How can we help?" />
+                    <ValidationMessage For="@(() => contactModel.Message)" />
+                </div>
+
+                <button type="submit" class="btn-submit">Send Message</button>
+            </EditForm>
+        </div>
+
+        <!-- Contact Info -->
+        <div class="contact-info">
+            <div class="info-item">
+                <div class="icon">📍</div>
+                <div>
+                    <h4>Our Location</h4>
+                    <p>123 Clean Street<br>Brightville, UK AB1 2CD</p>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="icon">📞</div>
+                <div>
+                    <h4>Phone</h4>
+                    <p>(0123) 456-7890</p>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="icon">✉️</div>
+                <div>
+                    <h4>Email</h4>
+                    <p>hello@pressureperfect.co.uk</p>
+                </div>
+            </div>
+            
+            <div class="map-placeholder">
+                <p>Interactive Map Coming Soon</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    public class ContactForm
+    {
+        [Required]
+        public string Name { get; set; } = "";
+        [Required, EmailAddress]
+        public string Email { get; set; } = "";
+        [Required, MinLength(10)]
+        public string Message { get; set; } = "";
+    }
+
+    private ContactForm contactModel = new();
+
+    private void HandleSubmit()
+    {
+        // Simulate sending email
+        Console.WriteLine($"Message from {contactModel.Name}: {contactModel.Message}");
+        contactModel = new(); // Reset form
+    }
+}
