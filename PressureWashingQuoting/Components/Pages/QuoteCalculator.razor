@@ -1,0 +1,140 @@
+@page "/quote-calculator"
+@using PressureWashingQuoting.Models
+@using PressureWashingQuoting.Services
+@inject IQuoteService QuoteService
+@rendermode InteractiveServer
+
+<PageTitle>Quote Calculator</PageTitle>
+
+<div class="quote-container">
+    <div class="quote-card">
+        <h2>Get Your Instant Quote</h2>
+        <p class="subtitle">Enter your details below for a real-time estimate.</p>
+
+        <EditForm Model="@quoteRequest" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            
+            <div class="form-group">
+                <label for="name">Full Name</label>
+                <InputText id="name" class="form-control" @bind-Value="quoteRequest.CustomerName" placeholder="Your Name" />
+                <ValidationMessage For="@(() => quoteRequest.CustomerName)" />
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <InputText id="email" class="form-control" @bind-Value="quoteRequest.Email" placeholder="you@example.com" />
+                <ValidationMessage For="@(() => quoteRequest.Email)" />
+            </div>
+
+            <div class="form-group">
+                <label for="address">Property Address</label>
+                <InputText id="address" class="form-control" @bind-Value="quoteRequest.Address" placeholder="Property Address" />
+                <ValidationMessage For="@(() => quoteRequest.Address)" />
+            </div>
+
+            <div class="form-row">
+                <div class="form-group half">
+                    <label for="surface">Surface Type</label>
+                    <InputSelect id="surface" class="form-control" @bind-Value="quoteRequest.SurfaceType" @bind-Value:after="CalculateEstimate">
+                        @foreach (var type in Enum.GetValues(typeof(SurfaceType)).Cast<SurfaceType>())
+                        {
+                            <option value="@type">@GetEnumDisplayName(type)</option>
+                        }
+                    </InputSelect>
+                </div>
+
+                <div class="form-group half">
+                    <label for="sqft">Square Footage</label>
+                    <div class="input-with-icon">
+                        <InputNumber id="sqft" class="form-control" @bind-Value="quoteRequest.SquareFootage" @bind-Value:after="CalculateEstimate" placeholder="0" />
+                        <span class="unit">sq ft</span>
+                    </div>
+                     <ValidationMessage For="@(() => quoteRequest.SquareFootage)" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Chemical Treatments (Optional)</label>
+                <div class="chemical-options">
+                    @foreach (var chemical in availableChemicals)
+                    {
+                        <div class="chemical-option">
+                            <input type="checkbox" id="@chemical.Id" 
+                                   checked="@chemical.IsSelected" 
+                                   @onchange="@(e => ToggleChemical(chemical, e))" />
+                            <label for="@chemical.Id">@chemical.Name (+@chemical.PricePerSqFt.ToString("C")/sqft)</label>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="estimate-section">
+                <div class="estimate-row">
+                    <span>Base Trip Fee:</span>
+                    <span>@currentQuote?.BaseTripFee.ToString("C")</span>
+                </div>
+                <div class="estimate-row">
+                    <span>Surface Cleaning (@currentQuote?.SurfaceRate.ToString("C")/sqft):</span>
+                     <span>@currentQuote?.AreaCost.ToString("C")</span>
+                </div>
+                 <div class="estimate-row">
+                    <span>Chemical Treatments:</span>
+                     <span>@currentQuote?.ChemicalCost.ToString("C")</span>
+                </div>
+                <hr />
+                <div class="estimate-total">
+                    <span>Estimated Total:</span>
+                    <span class="total-price">
+                        @(currentQuote?.TotalPrice.ToString("C") ?? "£0.00")
+                    </span>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn">Book Now</button>
+        </EditForm>
+    </div>
+</div>
+
+@using System.Linq
+
+@code {
+    private QuoteRequest quoteRequest = new QuoteRequest { SquareFootage = 1000 };
+    private QuoteResult? currentQuote;
+    private List<ChemicalOption> availableChemicals = new();
+
+    protected override void OnInitialized()
+    {
+        availableChemicals = QuoteService.GetAvailableChemicals();
+        quoteRequest.ChemicalOptions = availableChemicals; // Reference same list to track selection
+        CalculateEstimate();
+    }
+
+    private void CalculateEstimate()
+    {
+        // Ensure the request has the updated chemical selection state
+        quoteRequest.ChemicalOptions = availableChemicals;
+        currentQuote = QuoteService.CalculateQuote(quoteRequest);
+    }
+
+    private void ToggleChemical(ChemicalOption chemical, ChangeEventArgs e)
+    {
+        chemical.IsSelected = (bool)(e.Value ?? false);
+        CalculateEstimate();
+    }
+
+    private string GetEnumDisplayName(SurfaceType type)
+    {
+        var displayAttribute = type.GetType()
+            .GetField(type.ToString())
+            ?.GetCustomAttributes(typeof(System.ComponentModel.DataAnnotations.DisplayAttribute), false)
+            .SingleOrDefault() as System.ComponentModel.DataAnnotations.DisplayAttribute;
+
+        return displayAttribute?.Name ?? type.ToString();
+    }
+
+    private void HandleValidSubmit()
+    {
+        CalculateEstimate(); 
+        Console.WriteLine($"Quote submitted for {quoteRequest.CustomerName}: {currentQuote?.TotalPrice:C}");
+    }
+}
