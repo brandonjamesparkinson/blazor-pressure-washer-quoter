@@ -1,0 +1,120 @@
+@page "/booking"
+@using PressureWashingQuoting.Models
+@using PressureWashingQuoting.Services
+@inject IBookingService BookingService
+@inject IPaymentService PaymentService
+@inject NavigationManager Navigation
+@inject ILogger<Booking> Logger
+@rendermode InteractiveServer
+
+<PageTitle>Book Your Service - Pressure Perfect</PageTitle>
+
+<div class="booking-container">
+    @if (CurrentStep == 1)
+    {
+        <div class="step-card">
+            <h2>Select a Date & Time</h2>
+            <p>Choose a slot for your pressure washing service.</p>
+            
+            <div class="date-picker">
+                <input type="date" class="form-control" @bind="SelectedDate" @bind:after="LoadSlots" min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+            </div>
+
+            @if (isLoadingSlots)
+            {
+                <div class="spinner">Loading available slots...</div>
+            }
+            else if (AvailableSlots.Any())
+            {
+                <div class="slots-grid">
+                    @foreach (var slot in AvailableSlots)
+                    {
+                        <button class="slot-btn @(SelectedSlot == slot ? "selected" : "")" 
+                                disabled="@(!slot.IsAvailable)"
+                                @onclick="() => SelectSlot(slot)">
+                            @slot.StartTime.ToString("HH:mm") - @slot.EndTime.ToString("HH:mm")
+                        </button>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="no-slots">No slots available for this date. Please try another day.</p>
+            }
+
+            <button class="btn-next" disabled="@(SelectedSlot == null)" @onclick="() => CurrentStep = 2">Next: Review & Pay</button>
+        </div>
+    }
+    else if (CurrentStep == 2)
+    {
+        <div class="step-card">
+            <h2>Review Booking</h2>
+            
+            <div class="summary-box">
+                <p><strong>Service Date:</strong> @SelectedSlot?.StartTime.ToString("D")</p>
+                <p><strong>Time:</strong> @SelectedSlot?.StartTime.ToString("t") - @SelectedSlot?.EndTime.ToString("t")</p>
+                <hr/>
+                <p><strong>Total Amount:</strong> @TotalAmount.ToString("C")</p>
+            </div>
+
+            <button class="btn-back" @onclick="() => CurrentStep = 1">Back</button>
+            <button class="btn-pay" @onclick="ProcessPayment">Pay & Book Now</button>
+        </div>
+    }
+    else if (CurrentStep == 3)
+    {
+         <div class="step-card success">
+            <h2>Booking Confirmed! 🎉</h2>
+            <p>Thank you for your business. A confirmation email has been sent.</p>
+            <a href="/" class="btn-home">Return Home</a>
+        </div>
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    public double Amount { get; set; }
+    
+    // We need to carry over state. For a real app, use a scoped StateContainer service.
+    // For this prototype, we'll rely on Query Parameters for the Amount, 
+    // but ideally we'd pass the full Quote object.
+    
+    private int CurrentStep = 1;
+    private DateTime SelectedDate = DateTime.Today.AddDays(1);
+    private List<BookingSlot> AvailableSlots = new();
+    private BookingSlot? SelectedSlot;
+    private bool isLoadingSlots = false;
+    private double TotalAmount => Amount;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSlots();
+    }
+
+    private async Task LoadSlots()
+    {
+        isLoadingSlots = true;
+        AvailableSlots = await BookingService.GetAvailableSlotsAsync(SelectedDate);
+        SelectedSlot = null; // Reset selection on date change
+        isLoadingSlots = false;
+    }
+
+    private void SelectSlot(BookingSlot slot)
+    {
+        SelectedSlot = slot;
+    }
+
+    private async Task ProcessPayment()
+    {
+        // 1. Create Stripe Session (Mock)
+        string redirectUrl = await PaymentService.CreateCheckoutSessionAsync(TotalAmount, "gbp", "/booking?success=true", "/booking?cancel=true");
+        
+        // 2. In a real app, we'd redirect to 'redirectUrl' (Stripe).
+        // For Mock, we just simulate success immediately.
+        
+        // 3. Book the slot (Mock)
+        await BookingService.BookSlotAsync(SelectedSlot!, "customer@example.com"); // Email would come from Quote/User context
+
+        CurrentStep = 3; // Show success
+    }
+}

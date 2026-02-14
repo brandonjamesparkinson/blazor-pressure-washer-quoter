@@ -2,6 +2,7 @@
 @using PressureWashingQuoting.Models
 @using PressureWashingQuoting.Services
 @inject IQuoteService QuoteService
+@inject NavigationManager Navigation
 @rendermode InteractiveServer
 
 <PageTitle>Quote Calculator</PageTitle>
@@ -135,6 +136,9 @@
     private void HandleValidSubmit()
     {
         CalculateEstimate(); 
-        Console.WriteLine($"Quote submitted for {quoteRequest.CustomerName}: {currentQuote?.TotalPrice:C}");
+        if (currentQuote != null)
+        {
+            Navigation.NavigateTo($"/booking?amount={currentQuote.TotalPrice}");
+        }
     }
 }

@@ -8,6 +8,9 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddScoped<IQuoteService, QuoteService>();
+builder.Services.AddScoped<IBookingService, MockBookingService>();
+builder.Services.AddScoped<IPaymentService, MockPaymentService>();
+builder.Services.AddScoped<IEmailService, MockEmailService>();
 
 var app = builder.Build();
 
